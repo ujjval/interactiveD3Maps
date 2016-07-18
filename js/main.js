@@ -1,6 +1,7 @@
 
 var keyArray = ["varA","varB"];
 var expressed = keyArray[0];
+var legend_title = "Map of dummy numbers";
 
 //begin script when window loads
 window.onload = initialize();
@@ -117,51 +118,39 @@ function setMap()
 								//console.log("in regions"+ d.properties.DISTRICT+ choropleth(d, recolorMap))
 								return choropleth(d, recolorMap);
 							});
-
-		//console.log(colorScale(csvData).range());
-		var legend = map.selectAll('g.legendEntry')
-						.data(colorScale(csvData).range().reverse)
-						.enter()
-						.append('g')						
-						.attr('class', 'legendEntry');
-		// var legend = d3.selectAll('g.legendEntry')
-		// 				.append("svg")
-		// 				.data(colorScale(csvData).range().reverse)
-		// 				.enter()
-		// 				.append('g').attr('class', 'legendEntry');
-
-		console.log(legend);
 		
-		legend
-		    .append('rect')
-		    .attr("x", width - 940)
-		    .attr("y", function(d, i) {
-		       return i * 20;
-		    })
-		   .attr("width", 30)
-		   .attr("height", 10)
-		   .style("stroke", "black")
-		   .style("stroke-width", 1)
-		   .style("fill", function(d){return d;}); 
-		       //the data objects are the fill colors
+		d3.select("body")
+			.append('div')
+			.attr('id', 'legend');
 
-		legend
-		    .append('text')
-		    .attr("x", width - 900) //leave 5 pixel space after the <rect>
-		    .attr("y", function(d, i) {
-		       return i * 20;
-		    })
-		    .attr("dy", "0.8em") //place text one line *below* the x,y point
-		    .text(function(d,i) {
-		        var extent = colorScale(csvData).invertExtent(d);
-		        //extent will be a two-element array, format it however you want:
-		        var format = d3.format("0.2f");
-		        return format(+extent[0]) + " - " + format(+extent[1]);
-			});
+		addingLegend(expressed, csvData);
 
 		createDropdown(csvData);					
 	};
 };
+
+function addingLegend(attribute, csvData){
+	
+	var recolorMap = colorScale(csvData);
+	expressed = attribute;
+	
+	d3.select('#legend')
+			.html('Number of '+expressed);
+
+		var legend = d3.select('#legend')
+						.append('ul')
+						.attr('class', 'list-inline');
+		var keys = legend.selectAll('li.key')
+						.data(recolorMap.range());
+		keys.enter().append('li')
+			.attr('class', 'key')
+			.style('border-top-color', String)
+			.text(function(d){
+				var r = recolorMap.invertExtent(d);
+				//console.log("r="+r);
+				return r[0].toFixed(0);
+			});
+}
 
 function createDropdown(csvData){
 	//add a select element for the dropdown menu
@@ -188,15 +177,16 @@ function createDropdown(csvData){
 function colorScale(csvData){
 
 	//create quantile classes with color scale		
-	var color = d3.scaleQuantile() //designate quantile scale generator
-		.range([
-			"#D4B9DA",
-			"#C994C7",
-			"#DF65B0",
-			"#DD1C77",
-			"#980043"
-		]);
+	// var color = d3.scaleQuantile() //designate quantile scale generator
+	// 	.range([
+	// 		"#D4B9DA",
+	// 		"#C994C7",
+	// 		"#DF65B0",
+	// 		"#DD1C77",
+	// 		"#980043"
+	// 	]);
 	
+	var color = d3.scaleQuantize().range(colorbrewer.Greens[7]);
 	//build array of all currently expressed values for input domain
 	var domainArray = [];
 	for (var i in csvData){
@@ -241,6 +231,27 @@ function changeAttribute(attribute, csvData){
 				//console.log("in change attri"+choropleth(d, colorScale(csvData)));
 				return choropleth(d, colorScale(csvData)); //->
 			});
+	
+	addingLegend(attribute, csvData);
+
+	// var recolorMap = colorScale(csvData);
+	// //updating the legend entry also
+	// d3.select('#legend').html('Number of '+expressed);
+
+	// var legend = d3.select('#legend')
+	// 					.append('ul')
+	// 					.attr('class', 'list-inline');
+	// var keys = legend.selectAll('li.key')
+	// 				.data(recolorMap.range());
+	// keys.enter().append('li')
+	// 	.attr('class', 'key')
+	// 	.style('border-top-color', String)
+	// 	.text(function(d){
+	// 		var r = recolorMap.invertExtent(d);
+	// 			//console.log("r="+r);
+	// 		return r[0].toFixed(0);
+	// 	});
+
 };
 
 
