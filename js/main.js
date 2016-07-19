@@ -1,7 +1,8 @@
 
-var keyArray = ["varA","varB"];
+
+var keyArray = ["2011","2012","2013"];
 var expressed = keyArray[0];
-var legend_title = "Map of dummy numbers";
+var legend_title = "Enrollment Rate";
 
 //begin script when window loads
 window.onload = initialize();
@@ -34,7 +35,7 @@ function setMap()
 
 
 	//use queue.js to parallelize asynchronous data loading
-	queue().defer(d3.csv, "data/district_cow.csv") //load attributes from csv
+	queue().defer(d3.csv, "data/enrollment_rate.csv") //load attributes from csv
 		//.defer(d3.json, “data/EuropeCountries.topojson”) //load
 		.defer(d3.json, "data/gujarat_2011_census_topojson.json") //load geometry
 		.await(callback); //trigger callback function once data is loaded
@@ -121,11 +122,29 @@ function setMap()
 		
 		d3.select("body")
 			.append('div')
-			.attr('id', 'legend');
+			.attr('id', 'legend')
+			.attr('style', 'border:0; color:#777; font-weight:bold;')
+			.attr('readonly');
 
 		addingLegend(expressed, csvData);
+		
+		d3.select("body")
+			.append('div')
+			.attr('id', 'slider-main')
+			.attr('style','margin-top:'+(height-142)+'px; margin-left: '+(width/2-160)+'px');
+			
+		// d3.select("#slider-main").append('input')
+		// 	.attr('id', 'year')
+		// 	.attr('type', 'text')
+		// 	.attr( 'style','border:0; color:#f6931f; font-weight:bold;');
 
-		createDropdown(csvData);					
+		d3.select("#slider-main").append('div')
+			.attr('id', 'slider')
+			.attr('style','position: relative; width: 200px;');
+
+
+		//createDropdown(csvData);
+		addingSlider(expressed, csvData);					
 	};
 };
 
@@ -135,7 +154,7 @@ function addingLegend(attribute, csvData){
 	expressed = attribute;
 	
 	d3.select('#legend')
-			.html('Number of '+expressed);
+			.html(legend_title+' of '+expressed);
 
 		var legend = d3.select('#legend')
 						.append('ul')
@@ -157,10 +176,12 @@ function createDropdown(csvData){
 	var dropdown = d3.select("body")
 		.append("div")
 		.attr("class","dropdown") //for positioning menu with css
-		.html("<h3>Select Variable:</h3>")
+		.attr('style','margin-left: 816px; margin-top: -518px;')
+		.html("<h3>Select Variable</h3>")
 		.append("select")
 		.on("change", function(){ changeAttribute(this.value, csvData) }); //changes expressed attribute
 	
+
 	//create each option element within the dropdown
 	dropdown.selectAll("options")
 		.data(keyArray)
@@ -332,3 +353,34 @@ function moveLabel() {
  //                                'px; top:' + (mouse[1] - 35) + 'px')
  //            .html(props.DISTRICT);
 };
+
+function addingSlider(attribute, csvData) {
+
+	$( function() {
+	    $( "#slider" ).slider({
+	      value:attribute,
+	      min: parseInt(keyArray[0]),
+	      max: parseInt(keyArray[keyArray.length-1]),
+	      step: 1,
+	      animate: "slow",
+	      slide: function( event, ui ) {
+	        //$( "#year" ).val( "Year: " + ui.value );
+	      },
+	      change: function( event, ui){
+	      	changeAttribute(ui.value.toString(), csvData);
+	      }
+	    });
+
+//	    $( "#year" ).val( "Year: " + $( "#slider" ).slider( "value" ) );
+	  } );
+
+	$('#slider').labeledslider({
+        min: parseInt(keyArray[0]),
+        max: parseInt(keyArray[keyArray.length-1]),
+        tickArray: [2011,2012,2013]
+        // tickLabels: {
+        //   12:'cat',
+        //   38:'dog',
+        // }
+      });
+}
