@@ -1,8 +1,8 @@
 
-
-var keyArray = ["2011","2012","2013"];
+var selectorVars = ["aserGrade5Subtract","aserGrade5Reading"];
+var keyArray = ["2005","2006","2007","2008","2009","2010","2011","2012","2013","2014"];
 var expressed = keyArray[0];
-var legend_title = "Enrollment Rate";
+var legend_title = "ASER-Grade 5 Children Who can Subtract";
 
 //begin script when window loads
 window.onload = initialize();
@@ -35,28 +35,32 @@ function setMap()
 
 
 	//use queue.js to parallelize asynchronous data loading
-	queue().defer(d3.csv, "data/enrollment_rate.csv") //load attributes from csv
-		//.defer(d3.json, “data/EuropeCountries.topojson”) //load
+	queue().defer(d3.csv, "data/ASER_Grade5ChildrenSubtract.csv") //load attributes from csv
+		.defer(d3.csv,"data/ASER_Grade5ChildrenReadGrade1.csv")
 		.defer(d3.json, "data/gujarat_2011_census_topojson.json") //load geometry
 		.await(callback); //trigger callback function once data is loaded
 
-	function callback(error, csvData, gujMapData)
+	function callback(error, csvAserSubtractData, csvAserReadData, gujMapData)
 	{
 		if(error) {console.log(error)};
-		console.log(csvData);
+		console.log(csvAserSubtractData);
+		console.log(csvAserReadData);
 		console.log(gujMapData);
+
 
 		var tooltip = d3.select('body').append('div')
             .attr('class', 'tooltip hidden');
 
-		var recolorMap = colorScale(csvData);
+		var recolorMap = colorScale(csvAserSubtractData);
 
 		var jsonRegions = gujMapData.objects.Dist_census11.geometries;
 
-		for(var i=0; i<csvData.length; i++){
-          	//console.log(csvData[i].district_name);
-            var csvRegion = csvData[i];
-            var csvRegionName = csvData[i].district_name;
+		// get subtraction data
+
+		for(var i=0; i<csvAserSubtractData.length; i++){
+          	//console.log(csvAserSubtractData[i].district_name);
+            var csvRegion = csvAserSubtractData[i];
+            var csvRegionName = csvAserSubtractData[i].district_name;
             
             for(var j=0; j<jsonRegions.length; j++){
               //console.log(jsonRegions[j].properties.DISTRICT);
@@ -65,11 +69,15 @@ function setMap()
               if( jsonRegion == csvRegionName){                
                 //one more for loop to assign all key valye pairs
                 //console.log(jsonRegion);
+                // adding an object of aser subtraction to append year wise data
+                jsonRegions[j].properties[selectorVars[0]] ={};
+                var tempObj = jsonRegions[j].properties[selectorVars[0]];
+
                 for (var key in keyArray){
                 	var attr = keyArray[key];
-                	//console.log(csvRegion[attr]);
+                	//console.log(jsonRegion+":"+ attr+"-"+csvRegion[attr]);
                 	var val = parseFloat(csvRegion[attr]);
-                	jsonRegions[j].properties[attr] = val;
+                	tempObj[attr]=val;
                 	//console.log(jsonRegions[j].properties[attr]);
                 }
                 //jsonRegions[j].properties.name = csvRegion.district_name;
@@ -77,7 +85,41 @@ function setMap()
                 break;
               }
             }
-          }
+         }
+
+         //Get Aser Reading Data
+
+		for(var i=0; i<csvAserReadData.length; i++){
+          	//console.log(csvAserSubtractData[i].district_name);
+            var csvRegion = csvAserReadData[i];
+            var csvRegionName = csvAserReadData[i].district_name;
+            
+            for(var j=0; j<jsonRegions.length; j++){
+              //console.log(jsonRegions[j].properties.DISTRICT);
+              var jsonRegion = jsonRegions[j].properties.DISTRICT;
+
+              if( jsonRegion == csvRegionName){                
+                //one more for loop to assign all key valye pairs
+                //console.log(jsonRegion);
+                // adding an object of aser subtraction to append year wise data
+                jsonRegions[j].properties[selectorVars[1]] ={};
+                var tempObj = jsonRegions[j].properties[selectorVars[1]];
+
+                for (var key in keyArray){
+                	var attr = keyArray[key];
+                	//console.log(jsonRegion+":"+ attr+"-"+csvRegion[attr]);
+                	var val = parseFloat(csvRegion[attr]);
+                	tempObj[attr]=val;
+                	//console.log(jsonRegions[j].properties[attr]);
+                }
+                //jsonRegions[j].properties.name = csvRegion.district_name;
+
+                break;
+              }
+            }
+         }
+
+         // get a map
 
 		var regions = map.selectAll("path")
 						.data(topojson.feature(gujMapData, gujMapData.objects.Dist_census11).features)
@@ -104,7 +146,7 @@ function setMap()
                     		tooltip.classed('hidden', false)
                         			.attr('style', 'left:' + (mouse[0] + 15) +
                                 		'px; top:' + (mouse[1] - 35) + 'px')
-                        			.html(d.properties.DISTRICT+":"+d.properties[expressed]);
+                        			.html(d.properties.DISTRICT+":"+d.properties.aserGrade5Subtract[expressed]);
 						})
 						
 						.on("mouseout", function(d){
@@ -126,7 +168,7 @@ function setMap()
 			.attr('style', 'border:0; color:#777; font-weight:bold;')
 			.attr('readonly');
 
-		addingLegend(expressed, csvData);
+		addingLegend(expressed, csvAserSubtractData);
 		
 		d3.select("body")
 			.append('div')
@@ -140,17 +182,17 @@ function setMap()
 
 		d3.select("#slider-main").append('div')
 			.attr('id', 'slider')
-			.attr('style','position: relative; width: 200px;');
+			.attr('style','position: relative; width:'+(keyArray.length*40)+'px;');
 
 
-		//createDropdown(csvData);
-		addingSlider(expressed, csvData);					
+		//createDropdown(csvAserSubtractData);
+		addingSlider(expressed, csvAserSubtractData);					
 	};
 };
 
-function addingLegend(attribute, csvData){
+function addingLegend(attribute, csvAserSubtractData){
 	
-	var recolorMap = colorScale(csvData);
+	var recolorMap = colorScale(csvAserSubtractData);
 	expressed = attribute;
 	
 	d3.select('#legend')
@@ -171,7 +213,7 @@ function addingLegend(attribute, csvData){
 			});
 }
 
-function createDropdown(csvData){
+function createDropdown(csvAserSubtractData){
 	//add a select element for the dropdown menu
 	var dropdown = d3.select("body")
 		.append("div")
@@ -179,7 +221,7 @@ function createDropdown(csvData){
 		.attr('style','margin-left: 816px; margin-top: -518px;')
 		.html("<h3>Select Variable</h3>")
 		.append("select")
-		.on("change", function(){ changeAttribute(this.value, csvData) }); //changes expressed attribute
+		.on("change", function(){ changeAttribute(this.value, csvAserSubtractData) }); //changes expressed attribute
 	
 
 	//create each option element within the dropdown
@@ -195,7 +237,7 @@ function createDropdown(csvData){
 };
 
 
-function colorScale(csvData){
+function colorScale(csvAserSubtractData){
 
 	//create quantile classes with color scale		
 	// var color = d3.scaleQuantile() //designate quantile scale generator
@@ -209,19 +251,42 @@ function colorScale(csvData){
 	
 	var color = d3.scaleQuantize().range(colorbrewer.Greens[7]);
 	//build array of all currently expressed values for input domain
-	var domainArray = [];
-	for (var i in csvData){
-		domainArray.push(Number(csvData[i][expressed]));
-	};
+	// var domainArray = [];
+	// for (var i in csvAserSubtractData){
+	// 	domainArray.push(Number(csvAserSubtractData[i][expressed]));
+	// };
 	
 	//for equal-interval scale, use min and max expressed data values as domain
 	// color.domain([
-	// 	d3.min(csvData, function(d) { return Number(d[expressed]); }),
-	// 	d3.max(csvData, function(d) { return Number(d[expressed]); })
+	// 	d3.min(csvAserSubtractData, function(d) { return Number(d[expressed]); }),
+	// 	d3.max(csvAserSubtractData, function(d) { return Number(d[expressed]); })
 	// ]);
+	// console.log(d3.min(csvAserSubtractData, function(d) { 
+	// 		for(var i=0; i<keyArray.length; i++){
+	// 			var tempKey = keyArray[i];
+	// 			return Number(d[tempKey]);
+	// 		}
+			 
+	// 	}));
+
+	color.domain([
+		d3.min(csvAserSubtractData, function(d) { 
+			for(var i=0; i<keyArray.length; i++){
+				var tempKey = keyArray[i];
+				return Number(d[tempKey]);
+			}
+			 
+		}),
+		d3.max(csvAserSubtractData, function(d) { 
+			for(var i=0; i<keyArray.length; i++){
+				var tempKey = keyArray[i];
+				return Number(d[tempKey]);
+			}
+		 })
+	]);
 
 	//for quantile scale, pass array of expressed values as domain
-	color.domain(domainArray);
+	//color.domain(domainArray);
 	
 	return color; //return the color scale generator
 };
@@ -229,7 +294,9 @@ function colorScale(csvData){
 function choropleth(d, recolorMap){
 	
 	//get data value
-	var value = d.properties[expressed];
+	//console.log(d.properties);
+	var value = d.properties.aserGrade5Subtract[expressed];
+	//console.log(value);
 	//if value exists, assign it a color; otherwise assign gray
 	if (value) {
 		return recolorMap(value); //recolorMap holds the colorScale generator
@@ -238,24 +305,24 @@ function choropleth(d, recolorMap){
 	};
 };
 
-function changeAttribute(attribute, csvData){
+function changeAttribute(attribute, csvAserSubtractData){
 	//change the expressed attribute
 	expressed = attribute;
 	
 	//recolor the map
 	d3.selectAll(".regions") //select every region
 		.style("fill", function(d) { //color enumeration units
-			return choropleth(d, colorScale(csvData)); //->
+			return choropleth(d, colorScale(csvAserSubtractData)); //->
 		})
 		.select("desc") //replace the color text in each region's desc element
 			.text(function(d) {
-				//console.log("in change attri"+choropleth(d, colorScale(csvData)));
-				return choropleth(d, colorScale(csvData)); //->
+				//console.log("in change attri"+choropleth(d, colorScale(csvAserSubtractData)));
+				return choropleth(d, colorScale(csvAserSubtractData)); //->
 			});
 	
-	addingLegend(attribute, csvData);
+	addingLegend(attribute, csvAserSubtractData);
 
-	// var recolorMap = colorScale(csvData);
+	// var recolorMap = colorScale(csvAserSubtractData);
 	// //updating the legend entry also
 	// d3.select('#legend').html('Number of '+expressed);
 
@@ -354,7 +421,7 @@ function moveLabel() {
  //            .html(props.DISTRICT);
 };
 
-function addingSlider(attribute, csvData) {
+function addingSlider(attribute, csvAserSubtractData) {
 
 	$( function() {
 	    $( "#slider" ).slider({
@@ -362,12 +429,12 @@ function addingSlider(attribute, csvData) {
 	      min: parseInt(keyArray[0]),
 	      max: parseInt(keyArray[keyArray.length-1]),
 	      step: 1,
-	      animate: "slow",
+	      animate: 'slow',
 	      slide: function( event, ui ) {
-	        //$( "#year" ).val( "Year: " + ui.value );
+	        changeAttribute(ui.value.toString(), csvAserSubtractData);
 	      },
 	      change: function( event, ui){
-	      	changeAttribute(ui.value.toString(), csvData);
+	      	changeAttribute(ui.value.toString(), csvAserSubtractData);
 	      }
 	    });
 
@@ -377,7 +444,7 @@ function addingSlider(attribute, csvData) {
 	$('#slider').labeledslider({
         min: parseInt(keyArray[0]),
         max: parseInt(keyArray[keyArray.length-1]),
-        tickArray: [2011,2012,2013]
+        tickArray: parseInt(keyArray)
         // tickLabels: {
         //   12:'cat',
         //   38:'dog',
